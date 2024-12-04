@@ -23,3 +23,114 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+```{r load packages, message=FALSE, warning=FALSE, include=FALSE}
+
+options(scipen=999)
+options(digits = 3)
+
+packages <- c("tidyverse", "sf", "here", "ggplot2", "kableExtra", "patchwork","flexclust", "NbClust", "dplyr")
+
+package.check <- lapply(
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE, quietly=TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+)
+
+```
+
+
+```{r load data, message=FALSE, warning=FALSE, include=FALSE}
+
+data <- read.csv(here::here("data", "RegressionData.csv"))
+philly_shape <- st_read(here::here("data", "lecture1Data", "Regression Data.shp"))
+
+```
+
+
+# Introduction
+
+Describe the data set and indicate what the purpose of this assignment is. That is, how can k-means clustering help you look at the data, and what kinds of questions can you answer?
+
+# Methods
+
+How does the K-means algorithm work? Describe the steps in your own words.
+What are some of the limitations of the algorithm?
+What are some other clustering algorithms, and might they be more appropriate here?
+
+# Results
+
+```{r}
+
+df <- data.frame(scale(data[-1]))
+head(df)
+```
+
+```{r}
+wss <- (nrow(df)-1)*sum(apply(df,2,var))
+for (i in 2:20) wss[i] <- sum(kmeans(df, 
+                                     centers=i)$withinss)
+plot(1:20, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+```
+
+
+```{r}
+
+set.seed(1234)
+nc <- NbClust(df, min.nc=2, max.nc=15, method="kmeans", index="all")
+
+```
+
+```{r}
+table(nc$Best.n[1,])
+
+```
+
+
+```{r}
+par(mfrow=c(1,1)) 
+barplot(table(nc$Best.n[1,]),
+        xlab="Numer of Clusters", ylab="Number of Criteria",
+        main="Number of Clusters Chosen by 26 Criteria")
+```
+
+```{r}
+
+set.seed(1234)
+fit.km <- kmeans(df, 2, nstart=25)
+fit.km$size
+
+```
+
+
+```{r}
+
+cbind(round(aggregate(df[-1], by=list(cluster=fit.km$cluster), mean),1),fit.km$size)
+
+```
+
+```{r}
+
+cluster_assignments <- data.frame(Observation = 1:nrow(df), ClusterID = fit.km$cluster)
+philly_shape_with_clusters <- philly_shape %>%
+  left_join(cluster_assignments, by = c("POLY_ID" = "Observation"))
+
+```
+
+
+```{r}
+ggplot(philly_shape_with_clusters) +
+  geom_sf(aes(fill = as.factor(ClusterID))) +
+  scale_fill_manual(values = c("red", "blue")) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "K-Means Clustering of Philadelphia Census Tracts",
+       subtitle = "2 Clusters",
+       fill = "Cluster ID")
+```
+
+
