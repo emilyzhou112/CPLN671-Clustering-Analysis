@@ -8,7 +8,7 @@ output:
     mathjax: default
     toc: yes
     toc_float: yes
-    code_folding: hide
+    code_folding: show
     code_download: yes
 
 editor_options:
@@ -63,74 +63,136 @@ What are some other clustering algorithms, and might they be more appropriate he
 
 # Results
 
-```{r}
+Present and describe the results from the NbClust command and the scree plot.
+What’s the optimal number of clusters that you should choose based on the output?
+
+```{r scree plot, message=FALSE, warning=FALSE}
 
 df <- data.frame(scale(data[-1]))
-head(df)
-```
-
-```{r}
 wss <- (nrow(df)-1)*sum(apply(df,2,var))
 for (i in 2:20) wss[i] <- sum(kmeans(df, 
                                      centers=i)$withinss)
-plot(1:20, wss, type="b", xlab="Number of Clusters",
-     ylab="Within groups sum of squares")
+
+plot_data <- data.frame(
+  Clusters = 1:20,
+  WSS = wss
+)
+
+ggplot(plot_data, aes(x = Clusters, y = WSS)) +
+  geom_line(color = "#c44536", size = 1) +
+  geom_point(color = "#283d3b", size = 1.5) +
+  labs(
+    title = "Scree Plot for Identifying Optimal Clusters",
+    x = "Number of Clusters",
+    y = "Within-Group Sum of Squares"
+  ) +
+  theme_light() +   
+  theme(plot.subtitle = element_text(size = 9,face = "italic"),
+        plot.title = element_text(size = 12, face = "bold"), 
+        axis.text.x=element_text(size=6),
+        axis.text.y=element_text(size=6), 
+        axis.title=element_text(size=8))
 ```
 
+Run the k-means cluster analysis using the optimal number of clusters (i.e., the number of clusters that’s identified as the best by the largest number of diagnostics in NbClust)
 
-```{r}
+```{r k-means, message=FALSE, warning=FALSE}
 
 set.seed(1234)
 nc <- NbClust(df, min.nc=2, max.nc=15, method="kmeans", index="all")
 
 ```
 
-```{r}
-table(nc$Best.n[1,])
+
+```{r cluster number plot, message=FALSE, warning=FALSE}
+
+best_n_table <- as.data.frame(table(nc$Best.n[1,]))
+colnames(best_n_table) <- c("Clusters", "CriteriaCount")
+ggplot(best_n_table, aes(x = as.numeric(Clusters), y = CriteriaCount)) +
+  geom_bar(stat = "identity", fill = "#283d3b", color = NA) +
+  labs(
+    x = "Number of Clusters",
+    y = "Number of Criteria",
+    title = "Number of Clusters Chosen by 26 Criteria"
+  ) +
+  theme_light() +   
+  theme(plot.subtitle = element_text(size = 9,face = "italic"),
+        plot.title = element_text(size = 12, face = "bold"), 
+        axis.text.x=element_text(size=6),
+        axis.text.y=element_text(size=6), 
+        axis.title=element_text(size=8))
 
 ```
 
-
-```{r}
-par(mfrow=c(1,1)) 
-barplot(table(nc$Best.n[1,]),
-        xlab="Numer of Clusters", ylab="Number of Criteria",
-        main="Number of Clusters Chosen by 26 Criteria")
-```
-
-```{r}
+```{r k-means, message=FALSE, warning=FALSE}
 
 set.seed(1234)
-fit.km <- kmeans(df, 2, nstart=25)
-fit.km$size
+fit.km <- kmeans(df, 2, nstart = 25)
+
+cluster_sizes <- data.frame(
+  Cluster = 1:length(fit.km$size),
+  Size = fit.km$size
+)
+
+cluster_sizes %>%
+  kbl(
+    caption = "Cluster Sizes from K-Means Clustering",
+    col.names = c("Cluster", "Number of Points"),
+    align = "c"
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
 
 ```
 
 
-```{r}
+Present and describe the table produced by the aggregate command showing the mean values of the MEDHVAL, MEDHHINC, PCTBACHMOR, PCTSINGLES, and PCTVACANT in each cluster.Here, state whether the cluster solution makes sense and if so, come up with descriptive names for each of the resulting clusters.
 
-cbind(round(aggregate(df[-1], by=list(cluster=fit.km$cluster), mean),1),fit.km$size)
+
+```{r summarize cluster table, message=FALSE, warning=FALSE}
+
+cluster_summary <- cbind(
+  round(aggregate(data[-1], by = list(Cluster = fit.km$cluster), mean), 1),
+  Size = fit.km$size
+)
+
+# Display the table using kableExtra
+cluster_summary %>%
+  kbl(caption = "Summary of K-Means Clustering Results",
+      col.name=c('Cluster','MEDHVAL', "PCTBACHMOR", "MEDHHINC", "PCTVACANT", "PCTSINGLES", "Size")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
-```{r}
+State whether observations falling into the same K-means clusters also tend to cluster in space. That is, does the K-means cluster membership variable seem to be spatially autocorrelated? You should not use Moran’s I here, because the cluster membership variable is categorical.
+
+Does looking at the map yield any additional insight into the patterns you observe with the K-means analysis? Does it have any impact on how you might name the clusters?
+
+```{r cluster map, message=FALSE, warning=FALSE}
 
 cluster_assignments <- data.frame(Observation = 1:nrow(df), ClusterID = fit.km$cluster)
 philly_shape_with_clusters <- philly_shape %>%
   left_join(cluster_assignments, by = c("POLY_ID" = "Observation"))
 
-```
-
-
-```{r}
 ggplot(philly_shape_with_clusters) +
-  geom_sf(aes(fill = as.factor(ClusterID))) +
-  scale_fill_manual(values = c("red", "blue")) +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
+  geom_sf(aes(fill = as.factor(ClusterID)), color = NA) +  # Set color to NA to remove stroke
+  scale_fill_manual(values = c("#edddd4", "#c44536")) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    plot.title = element_text(size = 12, face = "bold"),
+    panel.background = element_blank(),
+    panel.border = element_rect(colour = "grey", fill = NA, size = 0.4)
+  ) +
   labs(title = "K-Means Clustering of Philadelphia Census Tracts",
        subtitle = "2 Clusters",
        fill = "Cluster ID")
+
 ```
 
+# Discussion
+
+Briefly describe any patterns that you observe. Any surprising findings?
 
