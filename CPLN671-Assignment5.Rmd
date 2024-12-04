@@ -1,0 +1,25 @@
+---
+title: "K-Means Clustering"
+author: "Emily Zhou, Ziyi Guo, Emma Jiang"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: simplex
+    mathjax: default
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+    code_download: yes
+
+editor_options:
+  markdown:
+    wrap: sentence
+---
+
+Version 1.0 | First Created Dec 4, 2024 | Updated Dec, 2024
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
