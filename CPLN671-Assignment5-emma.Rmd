@@ -1,0 +1,235 @@
+---
+title: "K-Means Clustering of Philadelphia's Census Tracts"
+author: "Emily Zhou, Ziyi Guo, Emma Jiang"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: simplex
+    mathjax: default
+    toc: yes
+    toc_float: yes
+    code_folding: show
+    code_download: yes
+
+editor_options:
+  markdown:
+    wrap: sentence
+---
+
+Version 1.0 | First Created Dec 4, 2024 | Updated Dec 5, 2024
+
+Keywords: K-means clustering, scree plot, unsupervised learning, 
+
+GitHub Repository: [CPLN671-Clustering-Analysis](https://github.com/emilyzhou112/CPLN671-Clustering-Analysis)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r load packages, message=FALSE, warning=FALSE, include=FALSE}
+
+options(scipen=999)
+options(digits = 3)
+
+packages <- c("tidyverse", "sf", "here", "ggplot2", "kableExtra", "patchwork","flexclust", "NbClust", "dplyr")
+
+package.check <- lapply(
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE, quietly=TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+)
+
+```
+
+
+```{r load data, message=FALSE, warning=FALSE, include=FALSE}
+
+data <- read.csv(here::here("Downloads","CPLN671-Clustering-Analysis-main","data", "RegressionData.csv"))
+philly_shape <- st_read(here::here("Downloads","CPLN671-Clustering-Analysis-main","data", "lecture1Data", "Regression Data.shp"))
+
+```
+
+
+# Introduction - Ziyi
+
+Describe the data set and indicate what the purpose of this assignment is. That is, how can k-means clustering help you look at the data, and what kinds of questions can you answer?
+
+# Methods
+
+In this assignment, we will mainly be using the K-means clustering algorithm to identify patterns among five socioeconomic variables of Philadelphia. Specifically, we will be using the five variables from assignment one and two's dataset: MEDHVAL, MEDHHINC, PCTBACHMOR, PCTSINGLES, and PCTVACANT.
+
+The K-Means algorithm is a widely used clustering technique that groups data points into \( k \) distinct clusters. In essence, the caluclation is a 6-step iterative process. The process begins with **initialization**, where the desired number of clusters \( k \) is chosen, and \( k \) centroids are randomly initialized. In the **assignment** step, each data point is assigned to the nearest centroid, typically based on Euclidean distance. Next, in the **update** step, the centroids are recalculated as the mean position of all points assigned to that cluster. These **assignment** and **update** steps alternate until the centroids stabilize, meaning they no longer change significantly, or until a predetermined number of iterations is reached. The final output is a set of \( k \) clusters, each represented by a centroid and its associated data points. Ultimately, K-means is trying to minimize the within-cluster sum of squared errors (SSE), which is done through computing the squared distance between each observation and the centroid of the cluster into which it falls, and sum these squared distances. 
+
+While K-Means is effective and easy to implement, it comes with notable limitations. First, the algorithm requires the user to specify \( k \), the number of clusters, in advance, which may not be intuitive or clear for all datasets. Second, it is applicable for continuous variables and may not be suitable for categorical or binary data. Third, K-Means assumes clusters are spherical and of equal size, which may not align with the actual distribution of data. Moreover, the algorithm is scale-sensitive; features with larger ranges can dominate distance calculations unless the data is properly normalized. Lastly, K-Means struggles with outliers, as they can disproportionately affect the centroids and, consequently, the cluster assignments.
+
+In addition to K-Means, there are several other clustering algorithms that can be used to identify patterns in data, most notably, Hierarchical Clustering and DBSCAN.
+
+- **Hierarchical Clustering** constructs a tree-like structure of clusters by iteratively merging smaller clusters (agglomerative) or splitting larger ones (divisive). Unlike K-Means, it does not require the user to specify \( k \), and it can identify non-spherical clusters. However, it is computationally expensive for large datasets.
+
+- **DBSCAN (Density-Based Spatial Clustering of Applications with Noise)** groups points based on density, marking sparse areas as noise. This approach is robust to outliers and non-spherical cluster shapes. However, it requires careful tuning of parameters like \( \epsilon \) (the neighborhood radius) and the minimum number of points for a cluster, and it struggles with datasets of varying densities.
+
+The choice of a clustering algorithm depends on the characteristics of the dataset and the research goals. For datasets with irregular cluster shapes or significant outliers, DBSCAN is a strong choice. If the user seeks a hierarchical representation or does not know the number of clusters beforehand, Hierarchical Clustering is a better fit. For spatial data like Philadelphia's census tracts, where cluster boundaries might not be spherical, algorithms like DBSCAN or Hierarchical Clustering are both suitable.
+
+
+# Results
+
+To decide the optimal number of clusters, we first made a scree plot to visualize the within-group sum of squares (WSS) for different numbers of clusters. The scree plot helps us identify the "elbow" point, which indicates the optimal number of clusters. We may notice that there is a significant inflection point at **2 clusters**, suggesting this as the optimal number of clusters.
+
+
+```{r scree plot, message=FALSE, warning=FALSE}
+
+df <- data.frame(scale(data[-1]))
+wss <- (nrow(df)-1)*sum(apply(df,2,var))
+for (i in 2:20) wss[i] <- sum(kmeans(df, 
+                                     centers=i)$withinss)
+
+plot_data <- data.frame(
+  Clusters = 1:20,
+  WSS = wss
+)
+
+ggplot(plot_data, aes(x = Clusters, y = WSS)) +
+  geom_line(color = "#c44536", size = 1) +
+  geom_point(color = "#283d3b", size = 1.5) +
+  labs(
+    title = "Scree Plot for Identifying Optimal Clusters",
+    x = "Number of Clusters",
+    y = "Within-Group Sum of Squares"
+  ) +
+  theme_light() +   
+  theme(plot.subtitle = element_text(size = 9,face = "italic"),
+        plot.title = element_text(size = 12, face = "bold"), 
+        axis.text.x=element_text(size=6),
+        axis.text.y=element_text(size=6), 
+        axis.title=element_text(size=8))
+```
+
+The NbClust pacakge provides a comprehensive set of 30 indices for determining the optimal number of clusters. These indices include the Gap statistic, silhouette, and Dunn index, among others. Here, we use the 26 most popular indices to determine the optimal number of clusters.
+
+The NbClust function aggregated results from multiple clustering indices. Among those, we may see that **8 indices** recommended 2 clusters while fewer indices recommended alternative numbers, such as 3, 4, 7, or 15 clusters. Based on the majority rule, the optimal number of clusters is also 2. 
+
+In addition, the D index, which calculates the second differences of the within-cluster variances for different numbers of clusters, helps to identify the point (the elbow) where adding more clusters does not significantly improve the fit. In this case, our plotsupported the conclusion that **2 clusters** best capture the structure in the data, as it corresponds to a significant increase in cluster separation.
+
+Therefore, based on the majority recommendation in NbClust and the visual interpretation of the scree plot, the optimal number of clusters for this dataset is **2**. 
+
+```{r k-means nc, message=FALSE, warning=FALSE}
+
+set.seed(1234)
+nc <- NbClust(df, min.nc=2, max.nc=15, method="kmeans", index="all")
+
+```
+
+This plot below shows the number of clusters chosen by the 26 criteria. We can see that the number of clusters chosen by the largest number (8) of diagnostics is 2. Then, the number of clusters chosen by the second-largest number (6) of diagnostics is 15. The number of clusters chosen by the third-largest number (3) of diagnostics is 3 or 4. 
+
+```{r cluster number plot, message=FALSE, warning=FALSE}
+
+best_n_table <- as.data.frame(table(nc$Best.n[1,]))
+colnames(best_n_table) <- c("Clusters", "CriteriaCount")
+ggplot(best_n_table, aes(x = Clusters, y = CriteriaCount)) +
+  geom_bar(stat = "identity", fill = "#283d3b", color = NA) +
+  labs(
+    x = "Number of Clusters",
+    y = "Number of Criteria",
+    title = "Number of Clusters Chosen by 26 Criteria"
+  ) +
+  theme_light() +   
+  theme(plot.subtitle = element_text(size = 9,face = "italic"),
+        plot.title = element_text(size = 12, face = "bold"), 
+        axis.text.x=element_text(size=6),
+        axis.text.y=element_text(size=6), 
+        axis.title=element_text(size=8))
+
+```
+
+We ran the K-means clustering algorithm with the optimal number of clusters (2) and 25 random starts to avoid local minima. The table below shows the number of points in each cluster. We can see that the two clusters are not relatively balanced, with one cluster having significantly more points than the other.
+
+```{r k-means, message=FALSE, warning=FALSE}
+
+set.seed(1234)
+fit.km <- kmeans(df, 2, nstart = 25)
+
+cluster_sizes <- data.frame(
+  Cluster = 1:length(fit.km$size),
+  Size = fit.km$size
+)
+
+cluster_sizes %>%
+  kbl(
+    caption = "Cluster Sizes from K-Means Clustering",
+    col.names = c("Cluster", "Number of Points"),
+    align = "c"
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+
+```
+
+Specifically, if we look at the aggregated table below that summarizes the mean values of key socioeconomic variables for each cluster, we can see how the two clusters differ.
+
+Cluster 1 is characterized by a lower median home value (\$49,952) and median household income (\$27,668). It also exhibits a lower percentage of individuals with a bachelor’s degree or higher (10.2%), a higher percentage of vacant housing units (12.5%), and a lower percentage of single family households (6.8%). This cluster contains a larger number of observations (1,446). These characteristics suggest that Cluster 1 might represent economically disadvantaged neighborhoods, where housing affordability is higher, but educational attainment and income levels are lower, and vacancy rates are higher.
+
+In contrast, Cluster 2 is characterized by a higher median home value (\$152,495) and median household income (\$51,983). It has a much higher percentage of individuals with a bachelor’s degree or higher (46.9%), a lower percentage of vacant housing units (4.8%), and a higher percentage of singles (22.3%). This cluster is smaller in size (274 observations) and likely represents affluent and highly educated neighborhoods, characterized by high property values, greater educational attainment, and fewer vacant homes.
+
+The solution appears to make sense given the clear distinctions in socioeconomic and demographic variables between the two clusters. Variables such as MEDHVAL, MEDHHINC, and PCTBACHMOR align with expected patterns for economically disadvantaged versus affluent areas. Additionally, differences in PCTVACANT and PCTSINGLES reinforce these interpretations, where wealthier areas typically have lower vacancy rates and a higher proportion of single family households.
+
+
+```{r summarize cluster table, message=FALSE, warning=FALSE}
+
+cluster_summary <- cbind(
+  round(aggregate(data[-1], by = list(Cluster = fit.km$cluster), mean), 1),
+  Size = fit.km$size
+)
+
+cluster_summary %>%
+  kbl(caption = "Summary of K-Means Clustering Results",
+      col.name=c('Cluster','MEDHVAL', "PCTBACHMOR", "MEDHHINC", "PCTVACANT", "PCTSINGLES", "Size")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Based on the map of Philadelphia census tracts colored by cluster, there are clear spatial patterns in the distribution of K-means clusters, indicating spatial autocorrelation in the cluster memberships. Observations falling into the same cluster tend to group geographically rather than being randomly distributed across the city. This spatial clustering aligns with the socioeconomic and demographic characteristics identified in the aggregated table. Specifically, Cluster 2 includes neighborhoods with higher property values and educational attainment, which tend to be concentrated in specific regions, such as parts of Center City or other affluent areas of the city in the northwest. This aligns well with our knowledge about Philadelphia. 
+
+In short, the map emphasizes how socioeconomic disparities are not only evident in the data but are also deeply embedded in the city's geography. 
+
+
+```{r cluster map, message=FALSE, warning=FALSE}
+
+cluster_assignments <- data.frame(Observation = 1:nrow(df), ClusterID = fit.km$cluster)
+philly_shape_with_clusters <- philly_shape %>%
+  left_join(cluster_assignments, by = c("POLY_ID" = "Observation"))
+
+ggplot(philly_shape_with_clusters) +
+  geom_sf(aes(fill = as.factor(ClusterID)), color = NA) +  # Set color to NA to remove stroke
+  scale_fill_manual(values = c("#edddd4", "#c44536")) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    plot.title = element_text(size = 12, face = "bold"),
+    panel.background = element_blank(),
+    panel.border = element_rect(colour = "grey", fill = NA, size = 0.4)
+  ) +
+  labs(title = "K-Means Clustering of Philadelphia Census Tracts",
+       subtitle = "2 Clusters",
+       fill = "Cluster ID")
+
+```
+
+# Discussion - Emma
+
+The clustering analysis provides important insights into the socio-economic and spatial disparities across Philadelphia. Using the K-means algorithm, the optimal number of clusters was identified as two, as determined by the scree plot's elbow point, the D index, and the consensus from multiple clustering criteria evaluated through the NbClust package. These clusters reveal distinct patterns, both in socio-economic characteristics and their geographic distribution.
+
+Cluster 1, which represents economically disadvantaged neighborhoods, is characterized by significantly lower median home values, median household incomes, and educational attainment levels compared to Cluster 2. This cluster also exhibits higher percentages of vacant housing units, indicative of economic distress and potential underinvestment in these areas. Geographically, these tracts are concentrated in historically disadvantaged regions such as North and West Philadelphia. These areas have long been associated with systemic challenges, including higher poverty rates, limited access to resources, and constrained economic opportunities.
+
+In contrast, Cluster 2 represents more affluent neighborhoods, with substantially higher median home values, household incomes, and educational attainment. The percentage of vacant housing units is notably lower, reflecting greater stability and investment in these areas. These tracts are largely concentrated in Center City and the northwest, aligning with areas traditionally known for higher wealth and educational attainment. This spatial clustering is consistent with prior research on urban inequality, where affluent areas tend to form cohesive geographic zones within cities.
+
+A surprising finding in this analysis is the stark imbalance in the size of the clusters. Cluster 1 encompasses a much larger number of census tracts compared to Cluster 2, underscoring the widespread prevalence of socio-economic disadvantage in Philadelphia. This finding highlights the extent of the city's economic challenges and the need for substantial interventions to promote equity. Moreover, the spatial autocorrelation observed in the clustering results suggests that these socio-economic disparities are deeply entrenched in the city’s geography, rather than randomly distributed. This pattern reflects historical processes of segregation and unequal resource allocation, which continue to shape the urban landscape.
+
+These findings underscore the importance of place-based policies aimed at addressing spatial inequities. The clear divide between clusters highlights the urgent need for targeted investment in education, housing, and economic development in disadvantaged neighborhoods. Additionally, the analysis provides a framework for identifying priority areas for intervention and resource allocation, contributing to a deeper understanding of the structural inequities that underlie Philadelphia’s socio-economic landscape.
+
