@@ -16,7 +16,7 @@ editor_options:
     wrap: sentence
 ---
 
-Version 1.0 | First Created Dec 4, 2024 | Updated Dec, 2024
+Version 1.0 | First Created Dec 4, 2024 | Updated Dec 5, 2024
 
 Keywords: K-means clustering, scree plot, unsupervised learning, 
 
@@ -192,11 +192,10 @@ cluster_summary %>%
 
 ```
 
-State whether observations falling into the same K-means clusters also tend to cluster in space. That is, does the K-means cluster membership variable seem to be spatially autocorrelated? You should not use Moran’s I here, because the cluster membership variable is categorical.
+Based on the map of Philadelphia census tracts colored by cluster, there are clear spatial patterns in the distribution of K-means clusters, indicating spatial autocorrelation in the cluster memberships. Observations falling into the same cluster tend to group geographically rather than being randomly distributed across the city. This spatial clustering aligns with the socioeconomic and demographic characteristics identified in the aggregated table. Specifically, Cluster 2 includes neighborhoods with higher property values and educational attainment, which tend to be concentrated in specific regions, such as parts of Center City or other affluent areas of the city in the northwest. This aligns well with our knowledge about Philadelphia. 
 
-Does looking at the map yield any additional insight into the patterns you observe with the K-means analysis? Does it have any impact on how you might name the clusters?
+In short, the map emphasizes how socioeconomic disparities are not only evident in the data but are also deeply embedded in the city's geography. 
 
-Specify whether the cluster solution makes sense. If it does, attempt to come up with descriptive names for each of the resulting clusters (see the slide called “Do Variables Have To Be Lat & Lon?” for an example of creative and descriptive names for clusters).
 
 ```{r cluster map, message=FALSE, warning=FALSE}
 
