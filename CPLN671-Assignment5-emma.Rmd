@@ -57,7 +57,7 @@ philly_shape <- st_read(here::here("Downloads","CPLN671-Clustering-Analysis-main
 
 # Introduction - Ziyi
 
-The dataset contains five variables for 1,720 block groups in Philadelphia. These variables include the median house value, median household income, percentage of individuals with at least a bachelor's degree, percentage of single/detached housing units, and percentage of vacant housing units. Together, these variables offer a snapshot of key socioeconomic and housing characteristics across different neighborhoods in the city.
+The dataset contains five variables for 1,720 block groups in Philadelphia. These variables include the median house value (**MEDHVAL**), median household income (**MEDHHINC**), percentage of individuals with at least a bachelor's degree (**PCTBACHMOR**), percentage of single/detached housing units (**PCTSINGLES**), and percentage of vacant housing units (**PCTVACANT**). Together, these variables offer a snapshot of key socioeconomic and housing characteristics across different neighborhoods in the city.
 
 The purpose of this assignment is to use k-means clustering to analyze and group the block groups based on their similarities across the five variables. By applying this technique, we can uncover patterns and relationships within the data that may not be immediately apparent. K-means clustering simplifies the complexity of analyzing such a large dataset by organizing it into clusters with shared characteristics, making it easier to identify trends and insights.
 
