@@ -57,7 +57,13 @@ philly_shape <- st_read(here::here("Downloads","CPLN671-Clustering-Analysis-main
 
 # Introduction - Ziyi
 
-Describe the data set and indicate what the purpose of this assignment is. That is, how can k-means clustering help you look at the data, and what kinds of questions can you answer?
+The dataset contains five variables for 1,720 block groups in Philadelphia. These variables include the median house value, median household income, percentage of individuals with at least a bachelor's degree, percentage of single/detached housing units, and percentage of vacant housing units. Together, these variables offer a snapshot of key socioeconomic and housing characteristics across different neighborhoods in the city.
+
+The purpose of this assignment is to use k-means clustering to analyze and group the block groups based on their similarities across the five variables. By applying this technique, we can uncover patterns and relationships within the data that may not be immediately apparent. K-means clustering simplifies the complexity of analyzing such a large dataset by organizing it into clusters with shared characteristics, making it easier to identify trends and insights.
+
+K-means clustering provides several advantages in analyzing this dataset. First, it reduces complexity by grouping similar block groups, allowing for a clearer understanding of neighborhood typologies. Second, it helps identify patterns, such as how variables like income and education levels correlate with housing types or vacancy rates. Finally, it segments the data into meaningful clusters, making it possible to distinguish areas with different socioeconomic and housing characteristics.
+
+This analysis can answer questions such as: Are there distinct groups of neighborhoods with similar characteristics? What socioeconomic or housing factors define each cluster? How do income and education levels relate to housing types or vacancy rates? Furthermore, k-means clustering can help identify areas requiring targeted interventions, such as affordable housing policies or economic revitalization efforts. Ultimately, this technique provides valuable insights for urban planning and policymaking by making complex data more accessible and actionable.
 
 # Methods
 
