@@ -1,5 +1,5 @@
 ---
-title: "K-Means Clustering of Philadelphia's Census Tracts"
+title: "K-Means Clustering of Philadelphia's Census Blocks"
 author: "Emily Zhou, Ziyi Guo, Emma Jiang"
 date: "`r Sys.Date()`"
 output:
@@ -16,7 +16,7 @@ editor_options:
     wrap: sentence
 ---
 
-Version 1.0 | First Created Dec 4, 2024 | Updated Dec 5, 2024
+Version 1.0 | First Created Dec 4, 2024 | Updated Dec 6, 2024
 
 Keywords: K-means clustering, scree plot, unsupervised learning, 
 
@@ -55,13 +55,16 @@ philly_shape <- st_read(here::here("data", "lecture1Data", "Regression Data.shp"
 ```
 
 
-# Introduction - Ziyi
+# Introduction
 
-Describe the data set and indicate what the purpose of this assignment is. That is, how can k-means clustering help you look at the data, and what kinds of questions can you answer?
+In this assignment, we use the K-means clustering algorithm to analyze five socioeconomic variables for 1,720 block groups in Philadelphia: MEDHVAL, MEDHHINC, PCTBACHMOR, PCTSINGLES, and PCTVACANT. This method simplifies the analysis by grouping block groups with similar characteristics, helping uncover patterns and relationships that might otherwise be overlooked.
+
+K-means clustering offers several benefits: it reduces complexity by segmenting neighborhoods into clear typologies, highlights correlations (e.g., between income, education, and housing types), and organizes the data into meaningful clusters. This analysis addresses key questions, such as identifying distinct neighborhood groups, understanding defining factors for each cluster, and exploring how income and education relate to vacancy rates or housing types.
+
+Additionally, this approach supports urban planning by identifying areas for targeted interventions, such as affordable housing policies or economic revitalization efforts. By making large datasets more accessible, K-means clustering provides actionable insights for data-driven decision-making.
+
 
 # Methods
-
-In this assignment, we will mainly be using the K-means clustering algorithm to identify patterns among five socioeconomic variables of Philadelphia. Specifically, we will be using the five variables from assignment one and two's dataset: MEDHVAL, MEDHHINC, PCTBACHMOR, PCTSINGLES, and PCTVACANT.
 
 The K-Means algorithm is a widely used clustering technique that groups data points into \( k \) distinct clusters. In essence, the caluclation is a 6-step iterative process. The process begins with **initialization**, where the desired number of clusters \( k \) is chosen, and \( k \) centroids are randomly initialized. In the **assignment** step, each data point is assigned to the nearest centroid, typically based on Euclidean distance. Next, in the **update** step, the centroids are recalculated as the mean position of all points assigned to that cluster. These **assignment** and **update** steps alternate until the centroids stabilize, meaning they no longer change significantly, or until a predetermined number of iterations is reached. The final output is a set of \( k \) clusters, each represented by a centroid and its associated data points. Ultimately, K-means is trying to minimize the within-cluster sum of squared errors (SSE), which is done through computing the squared distance between each observation and the centroid of the cluster into which it falls, and sum these squared distances. 
 
@@ -73,7 +76,7 @@ In addition to K-Means, there are several other clustering algorithms that can b
 
 - **DBSCAN (Density-Based Spatial Clustering of Applications with Noise)** groups points based on density, marking sparse areas as noise. This approach is robust to outliers and non-spherical cluster shapes. However, it requires careful tuning of parameters like \( \epsilon \) (the neighborhood radius) and the minimum number of points for a cluster, and it struggles with datasets of varying densities.
 
-The choice of a clustering algorithm depends on the characteristics of the dataset and the research goals. For datasets with irregular cluster shapes or significant outliers, DBSCAN is a strong choice. If the user seeks a hierarchical representation or does not know the number of clusters beforehand, Hierarchical Clustering is a better fit. For spatial data like Philadelphia's census tracts, where cluster boundaries might not be spherical, algorithms like DBSCAN or Hierarchical Clustering are both suitable.
+The choice of a clustering algorithm depends on the characteristics of the dataset and the research goals. For datasets with irregular cluster shapes or significant outliers, DBSCAN is a strong choice. If the user seeks a hierarchical representation or does not know the number of clusters beforehand, Hierarchical Clustering is a better fit. For spatial data like Philadelphia's block groups, where cluster boundaries might not be spherical, algorithms like DBSCAN or Hierarchical Clustering are both suitable.
 
 
 # Results
@@ -192,7 +195,7 @@ cluster_summary %>%
 
 ```
 
-Based on the map of Philadelphia census tracts colored by cluster, there are clear spatial patterns in the distribution of K-means clusters, indicating spatial autocorrelation in the cluster memberships. Observations falling into the same cluster tend to group geographically rather than being randomly distributed across the city. This spatial clustering aligns with the socioeconomic and demographic characteristics identified in the aggregated table. Specifically, Cluster 2 includes neighborhoods with higher property values and educational attainment, which tend to be concentrated in specific regions, such as parts of Center City or other affluent areas of the city in the northwest. This aligns well with our knowledge about Philadelphia. 
+Based on the map of Philadelphia census blocks colored by cluster, there are clear spatial patterns in the distribution of K-means clusters, indicating spatial autocorrelation in the cluster memberships. Observations falling into the same cluster tend to group geographically rather than being randomly distributed across the city. This spatial clustering aligns with the socioeconomic and demographic characteristics identified in the aggregated table. Specifically, Cluster 2 includes neighborhoods with higher property values and educational attainment, which tend to be concentrated in specific regions, such as parts of Center City or other affluent areas of the city in the northwest. This aligns well with our knowledge about Philadelphia. 
 
 In short, the map emphasizes how socioeconomic disparities are not only evident in the data but are also deeply embedded in the city's geography. 
 
@@ -215,13 +218,32 @@ ggplot(philly_shape_with_clusters) +
     panel.background = element_blank(),
     panel.border = element_rect(colour = "grey", fill = NA, size = 0.4)
   ) +
-  labs(title = "K-Means Clustering of Philadelphia Census Tracts",
+  labs(title = "K-Means Clustering of Philadelphia Census Blocks",
        subtitle = "2 Clusters",
        fill = "Cluster ID")
 
 ```
 
-# Discussion - Emma
+# Discussion 
 
-Briefly describe any patterns that you observe. Any surprising findings?
+The clustering analysis provides important insights into the socio-economic and spatial disparities across Philadelphia. Using the K-means algorithm, the optimal number of clusters was identified as two, as determined by the scree plot's elbow point, the D index, and the consensus from multiple clustering criteria evaluated through the NbClust package. These clusters reveal distinct patterns, both in socio-economic characteristics and their geographic distribution.
+
+Cluster 1, which represents economically disadvantaged neighborhoods, is characterized by significantly lower median home values, median household incomes, and educational attainment levels compared to Cluster 2. This cluster also exhibits higher percentages of vacant housing units, indicative of economic distress and potential underinvestment in these areas. Geographically, these tracts are concentrated in historically disadvantaged regions such as North and West Philadelphia. These areas have long been associated with systemic challenges, including higher poverty rates, limited access to resources, and constrained economic opportunities.
+
+In contrast, Cluster 2 represents more affluent neighborhoods, with substantially higher median home values, household incomes, and educational attainment. The percentage of vacant housing units is notably lower, reflecting greater stability and investment in these areas. These tracts are largely concentrated in Center City and the northwest, aligning with areas traditionally known for higher wealth and educational attainment. This spatial clustering is consistent with prior research on urban inequality, where affluent areas tend to form cohesive geographic zones within cities.
+
+A surprising finding in this analysis is the stark imbalance in the size of the clusters. Cluster 1 encompasses a much larger number of census tracts compared to Cluster 2, underscoring the widespread prevalence of socio-economic disadvantage in Philadelphia. This finding highlights the extent of the city's economic challenges and the need for substantial interventions to promote equity. Moreover, the spatial autocorrelation observed in the clustering results suggests that these socio-economic disparities are deeply entrenched in the city’s geography, rather than randomly distributed. This pattern reflects historical processes of segregation and unequal resource allocation, which continue to shape the urban landscape.
+
+These findings underscore the importance of place-based policies aimed at addressing spatial inequities. The clear divide between clusters highlights the urgent need for targeted investment in education, housing, and economic development in disadvantaged neighborhoods. Additionally, the analysis provides a framework for identifying priority areas for intervention and resource allocation, contributing to a deeper understanding of the structural inequities that underlie Philadelphia’s socio-economic landscape.
+
+
+
+
+
+
+
+
+
+
+
 
